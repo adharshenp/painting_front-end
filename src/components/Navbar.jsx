@@ -53,7 +53,7 @@ function Navigation() {
               letterSpacing: "1px",
             }}
           >
-            Vyshnav Artworks
+            Vaishnav Artworks
           </span>
         </Navbar.Brand>
 
