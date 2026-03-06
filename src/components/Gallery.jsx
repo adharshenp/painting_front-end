@@ -5,52 +5,67 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const BASE_URL = "http://localhost:5000";
+/* ==========================
+   AUTO DETECT BACKEND URL
+========================== */
+const BASE_URL = `${window.location.protocol}//${window.location.hostname}:5000`;
 
 function Gallery() {
+
   const [artworks, setArtworks] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
   const [editingId, setEditingId] = useState(null);
   const [newName, setNewName] = useState("");
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   const [token, setToken] = useState(localStorage.getItem("adminToken") || "");
 
   /* ==========================
      Fetch Images
   ========================== */
+
   useEffect(() => {
     fetchImages();
   }, []);
 
   const fetchImages = async () => {
     try {
+
       const res = await axios.get(`${BASE_URL}/uploads`);
 
       const fetchedImages = (res.data.images || []).map((img) => ({
         id: img.id,
-        img: img.url,
+        img: `${BASE_URL}${img.url}`,
         title: img.name || "Untitled",
       }));
 
       setArtworks(fetchedImages);
+
     } catch (error) {
+
       console.error(error);
       toast.error("Failed to fetch images");
+
     }
   };
 
   /* ==========================
-     Login
+     LOGIN
   ========================== */
+
   const handleLogin = async (e) => {
+
     e.preventDefault();
 
     try {
+
       const res = await axios.post(`${BASE_URL}/login`, {
         username,
-        password,
+        password
       });
 
       localStorage.setItem("adminToken", res.data.token);
@@ -60,31 +75,42 @@ function Gallery() {
       setPassword("");
 
       toast.success("Logged in successfully");
-    } catch (error) {
+
+    } catch {
+
       toast.error("Invalid admin credentials");
+
     }
+
   };
 
   /* ==========================
-     Logout
+     LOGOUT
   ========================== */
+
   const handleLogout = () => {
+
     localStorage.removeItem("adminToken");
     setToken("");
+
     toast.info("Logged out");
+
   };
 
   /* ==========================
-     File Select
+     FILE SELECT
   ========================== */
+
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
   };
 
   /* ==========================
-     Upload Image
+     UPLOAD IMAGE
   ========================== */
+
   const handleUpload = async (e) => {
+
     e.preventDefault();
 
     if (!selectedFile) {
@@ -101,61 +127,76 @@ function Gallery() {
     formData.append("image", selectedFile);
 
     try {
+
       setUploading(true);
 
-      const res = await axios.post(`${BASE_URL}/upload`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await axios.post(
+        `${BASE_URL}/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       const newImage = {
         id: res.data.id,
-        img: res.data.url,
-        title: res.data.name,
+        img: `${BASE_URL}${res.data.url}`,
+        title: res.data.name
       };
 
-      setArtworks((prev) => [newImage, ...prev]);
-
+      setArtworks(prev => [newImage, ...prev]);
       setSelectedFile(null);
 
       toast.success("Image uploaded successfully");
+
     } catch (error) {
+
       console.error(error);
       toast.error("Upload failed");
+
     } finally {
+
       setUploading(false);
+
     }
+
   };
 
   /* ==========================
-     Edit Image Name
+     EDIT IMAGE
   ========================== */
+
   const handleEdit = (id, currentName) => {
+
     setEditingId(id);
     setNewName(currentName);
+
   };
 
   const handleSaveEdit = async (id) => {
+
     if (!newName.trim()) {
       toast.warning("Name cannot be empty");
       return;
     }
 
     try {
+
       await axios.put(
         `${BASE_URL}/edit/${id}`,
         { name: newName },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 
-      setArtworks((prev) =>
-        prev.map((art) =>
+      setArtworks(prev =>
+        prev.map(art =>
           art.id === id ? { ...art, title: newName } : art
         )
       );
@@ -164,30 +205,41 @@ function Gallery() {
       setNewName("");
 
       toast.success("Name updated");
-    } catch (error) {
+
+    } catch {
+
       toast.error("Update failed");
+
     }
+
   };
 
   /* ==========================
-     Delete Image
+     DELETE IMAGE
   ========================== */
+
   const handleDelete = async (id) => {
+
     if (!window.confirm("Delete this image?")) return;
 
     try {
+
       await axios.delete(`${BASE_URL}/delete/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
 
-      setArtworks((prev) => prev.filter((art) => art.id !== id));
+      setArtworks(prev => prev.filter(art => art.id !== id));
 
       toast.success("Image deleted");
-    } catch (error) {
+
+    } catch {
+
       toast.error("Delete failed");
+
     }
+
   };
 
   /* ==========================
@@ -195,17 +247,24 @@ function Gallery() {
   ========================== */
 
   return (
+
     <section style={{ background: "#111", padding: "80px 0" }}>
+
       <Container>
 
-        <h2 className="text-center text-info mb-5">Art Gallery</h2>
+        <h2 className="text-center text-info mb-5">
+          Art Gallery
+        </h2>
 
-        {/* Login */}
+        {/* LOGIN */}
+
         {!token ? (
+
           <Form
             onSubmit={handleLogin}
             className="d-flex flex-column align-items-center mb-4"
           >
+
             <Form.Control
               type="text"
               placeholder="Admin Username"
@@ -227,21 +286,30 @@ function Gallery() {
             <Button variant="info" type="submit">
               Login
             </Button>
+
           </Form>
+
         ) : (
+
           <div className="text-center mb-4">
+
             <Button variant="danger" onClick={handleLogout}>
               Logout
             </Button>
+
           </div>
+
         )}
 
-        {/* Upload */}
+        {/* UPLOAD */}
+
         {token && (
+
           <Form
             onSubmit={handleUpload}
             className="d-flex flex-column align-items-center mb-5"
           >
+
             <Form.Control
               type="file"
               accept="image/*"
@@ -253,26 +321,36 @@ function Gallery() {
             <Button type="submit" disabled={uploading}>
               {uploading ? "Uploading..." : "Upload Image"}
             </Button>
+
           </Form>
+
         )}
 
-        {/* Gallery */}
+        {/* GALLERY */}
+
         <Row>
+
           {artworks.map((art) => (
-            <Col key={art.id} md={4} className="mb-4">
+
+            <Col key={art.id} md={4} sm={6} xs={12} className="mb-4">
 
               <motion.div whileHover={{ scale: 1.05 }}>
 
                 <Card>
+
                   <Card.Img
                     variant="top"
                     src={art.img}
-                    style={{ height: "300px", objectFit: "cover" }}
+                    style={{
+                      height: "300px",
+                      objectFit: "cover"
+                    }}
                   />
 
                   <Card.Body className="text-center">
 
                     {editingId === art.id ? (
+
                       <>
                         <Form.Control
                           value={newName}
@@ -288,11 +366,14 @@ function Gallery() {
                           Save
                         </Button>
                       </>
+
                     ) : (
+
                       <>
                         <Card.Title>{art.title}</Card.Title>
 
                         {token && (
+
                           <>
                             <Button
                               variant="warning"
@@ -313,23 +394,31 @@ function Gallery() {
                               Delete
                             </Button>
                           </>
+
                         )}
+
                       </>
+
                     )}
 
                   </Card.Body>
+
                 </Card>
 
               </motion.div>
 
             </Col>
+
           ))}
+
         </Row>
 
       </Container>
 
       <ToastContainer position="top-center" autoClose={2000} />
+
     </section>
+
   );
 }
 
